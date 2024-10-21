@@ -2,11 +2,14 @@ import os
 
 from dotenv import load_dotenv
 from llama_index.core import Settings, VectorStoreIndex
+from llama_index.core.callbacks import CallbackManager
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.perplexity import Perplexity
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from pinecone import Pinecone
 from pythainlp import word_tokenize
+
+from cb_handlers import LLMTemplateLogger
 
 load_dotenv()
 PINECONE_INDEX_NAME = os.environ["PINECONE_INDEX_NAME"]
@@ -19,6 +22,20 @@ class ThaiTextSplitter:
         tokens = word_tokenize(text, engine="newmm", keep_whitespace=False)
         return " ".join(tokens)
 
+#----------------------------------------------------------
+# Important note: It is important to set the global callback manager before
+# instantiated any LlamaIndex objects. This allows components instantiated 
+# subsequently to set the manager properly.
+
+# Initialize the custom callback handler
+llm_template_logger = LLMTemplateLogger()
+
+# Create a CallbackManager with the custom handler
+callback_manager = CallbackManager([llm_template_logger])
+
+Settings.callback_manager = callback_manager
+
+#----------------------------------------------------------
 
 # Set up Pinecone
 from pinecone import Pinecone, ServerlessSpec
@@ -53,7 +70,9 @@ query_engine = index.as_query_engine()
 def answer_query(user_query):
     thai_text_splitter = ThaiTextSplitter()
     response = query_engine.query(thai_text_splitter.split_text(user_query))
-
+    messages = llm_template_logger.get_messages()
+    for message in messages:
+        print(f"<DEBUG> {message.content}")
     return response.response
 
 
