@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from llama_index.core import Settings, VectorStoreIndex
 from llama_index.core.callbacks import CallbackManager
+from llama_index.core.response_synthesizers import get_response_synthesizer
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.perplexity import Perplexity
 from llama_index.vector_stores.pinecone import PineconeVectorStore
@@ -22,9 +23,10 @@ class ThaiTextSplitter:
         tokens = word_tokenize(text, engine="newmm", keep_whitespace=False)
         return " ".join(tokens)
 
-#----------------------------------------------------------
+
+# ----------------------------------------------------------
 # Important note: It is important to set the global callback manager before
-# instantiated any LlamaIndex objects. This allows components instantiated 
+# instantiated any LlamaIndex objects. This allows components instantiated
 # subsequently to set the manager properly.
 
 # Initialize the custom callback handler
@@ -35,7 +37,7 @@ callback_manager = CallbackManager([llm_template_logger])
 
 Settings.callback_manager = callback_manager
 
-#----------------------------------------------------------
+# ----------------------------------------------------------
 
 # Set up Pinecone
 from pinecone import Pinecone, ServerlessSpec
@@ -63,13 +65,25 @@ index = VectorStoreIndex.from_vector_store(
     vector_store, embed_model=embed_model, llm=llm
 )
 
-# Create query engine
-query_engine = index.as_query_engine()
+# Create node retriever
+retriever = index.as_retriever()
+
+# Create response synthesizer for querying LLM
+response_synthesizer = get_response_synthesizer()
 
 
 def answer_query(user_query):
     thai_text_splitter = ThaiTextSplitter()
-    response = query_engine.query(thai_text_splitter.split_text(user_query))
+    retrieved_nodes = retriever.retrieve(thai_text_splitter.split_text(user_query))
+    response = response_synthesizer.synthesize(query=user_query, nodes=retrieved_nodes)
+
+    # Print retrieved nodes
+    for i, node in enumerate(retrieved_nodes):
+        print(f"Node: {i}")
+        print(f"    Score:    {node.score}")
+        print(f"    Metadata: {node.metadata}")
+
+    # Print LLM template for debugging
     messages = llm_template_logger.get_messages()
     for message in messages:
         print(f"<DEBUG> {message.content}")
