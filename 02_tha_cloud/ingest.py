@@ -37,19 +37,27 @@ pinecone_index = pc.Index(PINECONE_INDEX_NAME)
 print("Load HTML documents")
 unstructured_reader = UnstructuredReader()
 documents = SimpleDirectoryReader(
-    IMPORT_DATA_DIR, file_extractor={".html": unstructured_reader}
+    IMPORT_DATA_DIR,
+    file_extractor={".html": unstructured_reader},
+    file_metadata=lambda file_path: {
+        "source": os.path.basename(file_path),
+        "source_type": "file",
+    },
 ).load_data()
 
 # Extract only text from the documents
 print("Extracting text")
 thai_text_splitter = ThaiTextSplitter()
 text_documents = [
-    Document(text=thai_text_splitter.split_text(doc.text)) for doc in documents
+    Document(text=thai_text_splitter.split_text(doc.text), metadata=doc.metadata)
+    for doc in documents
 ]
 
 print("Creating SimpleNodeParser")
 # Set up node parser for chunking
-node_parser = SimpleNodeParser.from_defaults(chunk_size=500, chunk_overlap=20)
+node_parser = SimpleNodeParser.from_defaults(
+    chunk_size=500, chunk_overlap=20, include_metadata=True
+)
 # nodes = node_parser.get_nodes_from_documents(text_documents)
 
 # Set up HuggingFace embedding
