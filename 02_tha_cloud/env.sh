@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -e
 
 S3_URL=s3://jojjiw/satellite_ma/llamaindex/02_tha_cloud/.env
