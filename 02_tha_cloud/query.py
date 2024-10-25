@@ -5,6 +5,7 @@ from llama_index.core import Settings, VectorStoreIndex
 from llama_index.core.callbacks import CallbackManager
 from llama_index.core.response_synthesizers import get_response_synthesizer
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.llms.ollama import Ollama
 from llama_index.llms.perplexity import Perplexity
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from pinecone import Pinecone
@@ -16,6 +17,7 @@ load_dotenv()
 PINECONE_INDEX_NAME = os.environ["PINECONE_INDEX_NAME"]
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
 PERPLEXITY_API_KEY = os.environ["PERPLEXITY_API_KEY"]
+OLLAMA_BASE_URL = f"http://{os.environ['OLLAMA_BASE_ENDPOINT']}"
 
 
 class ThaiTextSplitter:
@@ -55,7 +57,10 @@ embed_model = HuggingFaceEmbedding(
 llm = Perplexity(
     api_key=PERPLEXITY_API_KEY, model="llama-3.1-70b-instruct", temperature=0.5
 )
-Settings.llm = llm
+llm_private = Ollama(
+    model="llama3.1:70b", base_url=OLLAMA_BASE_URL, request_timeout=600.0
+)
+Settings.llm = llm_private
 
 # Create vector store
 vector_store = PineconeVectorStore(pinecone_index=pinecone_index)
