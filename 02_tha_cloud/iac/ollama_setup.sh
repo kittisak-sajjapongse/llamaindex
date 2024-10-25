@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 curl -fsSL https://ollama.com/install.sh | sh
+sleep 15
 ollama pull llama3.1:70b
 
 # Allow Ollama to serve request from anywhere

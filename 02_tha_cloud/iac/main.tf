@@ -67,7 +67,7 @@ resource "digitalocean_droplet" "wiki" {
   # c-8  - 8 vCPUs, 16GB RAM
   # c-16 - 16 vCPUs, 32GB RAM
   # c-32 - 32 vCPUs, 64GB RAM
-  size   = "c-32"
+  size   = "c-60-intel"
   image  = "ubuntu-24-04-x64"
 
   # Connect to both public and private networks
